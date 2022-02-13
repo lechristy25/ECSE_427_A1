@@ -19,6 +19,7 @@ int main(int argc, char *argv[]) {
 	char prompt = '$';  				// Shell prompt
 	char userInput[MAX_USER_INPUT];		// user's input stored here
 	int errorCode = 0;					// zero means no error, default
+	char *cmd;
 
 	//init user input
 	for (int i=0; i<MAX_USER_INPUT; i++)
@@ -26,14 +27,23 @@ int main(int argc, char *argv[]) {
 	
 	//init shell memory
 	mem_init();
-
-	while(1) {							
+	while(1) {
+		if(feof(stdin)){
+			if(freopen("/dev/tty", "r", stdin) == NULL){
+				exit(1);
+			}else{
+				freopen("/dev/tty", "r", stdin);
+			}
+		}
 		printf("%c ",prompt);
 		fgets(userInput, MAX_USER_INPUT-1, stdin);
-
-		errorCode = parseInput(userInput);
-		if (errorCode == -1) exit(99);	// ignore all other errors
-		memset(userInput, 0, sizeof(userInput));
+		cmd = strtok(userInput, ";");
+		while(cmd != NULL) {
+			errorCode = parseInput(cmd);
+			if (errorCode == -1) exit(99);	// ignore all other errors
+			memset(cmd, 0, sizeof(cmd));
+			cmd = strtok(NULL, ";");
+		}						
 
 	}
 
@@ -60,8 +70,11 @@ int parseInput(char ui[]) {
 
 		words[w] = strdup(tmp);
 
-		a++; 
 		w++;
+		if(ui[a] == '\0'){
+			break;
+		}
+		a++;
 	}
 
 	return interpreter(words, w);
